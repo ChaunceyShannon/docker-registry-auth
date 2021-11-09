@@ -31,7 +31,7 @@ docker run \
     --hostname registry \
     --restart=unless-stopped \
     -v /data/registry/images:/var/lib/registry \
-    -e public_domain=public.example.com \
+    -e public_domain=cr.example.com \
     -e user=username \
     -e pass=password \
     -e REGISTRY_STORAGE_DELETE_ENABLED=true \
