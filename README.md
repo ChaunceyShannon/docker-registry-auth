@@ -41,3 +41,18 @@ docker run \
 The application will first start an official registry server with the default config file normally, and then listen on TCP 5001 port and forward the request to 5000 port that the official registry server is listened on. 
 
 All the things the reverse proxy needs to do is to forward traffic to port 5001 of the container, no matter what domain is.
+
+```nginx
+server {
+  server_name registry.example.com cr.example.com;
+  listen 443 ssl;
+  ssl_certificate /data/certs/example.com/example.com.crt;
+  ssl_certificate_key /data/certs/example.com/example.com.key;
+
+  location / {
+        proxy_pass http://172.17.0.2:5001;
+        proxy_set_header Host $http_host;
+        client_max_body_size 2048m;
+   }
+}
+```
