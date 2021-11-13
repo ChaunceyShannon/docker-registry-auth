@@ -54,7 +54,7 @@ func ProxyRequestHandler(proxy *httputil.ReverseProxy) func(http.ResponseWriter,
 			}
 		} else {
 			lg.trace("Request URI:", r.RequestURI)
-			if len(reFindAll("/v2/[a-z0-9A-Z]+?/(blobs|manifests)/sha256:[0-9a-z]{64}", r.RequestURI)) != 0 || len(reFindAll("/v2/[a-z0-9A-Z]+?/manifests/[0-9-a-zA-Z]+?$", r.RequestURI)) != 0 {
+			if len(reFindAll("/v2/[\\-a-z0-9A-Z]+?/(blobs|manifests)/sha256:[0-9a-z]{64}", r.RequestURI)) != 0 || len(reFindAll("/v2/[\\-a-z0-9A-Z]+?/manifests/[0-9-a-zA-Z]+?$", r.RequestURI)) != 0 {
 				lg.trace("Forward to backend server")
 				proxy.ServeHTTP(w, r)
 			} else {
