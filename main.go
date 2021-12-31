@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+
+	. "github.com/ChaunceyShannon/golanglibs"
 )
 
 var publicDomain string
@@ -24,45 +26,45 @@ func NewProxy(targetHost string) (*httputil.ReverseProxy, error) {
 func ProxyRequestHandler(proxy *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var host string
-		if strIn(":", r.Host) {
-			host = strSplit(r.Host, ":")[0]
+		if String(":").In(r.Host) {
+			host = String(r.Host).Split(":")[0].S
 		} else {
 			host = r.Host
 		}
-		lg.trace("Requests domain:", host)
-		if (host == publicDomain && !itemInArray(r.Method, []string{"GET", "HEAD"})) || host != publicDomain {
-			lg.trace("Need authorization")
-			if err := try(func() {
+		Lg.Trace("Requests domain:", host)
+		if (host == publicDomain && !Array([]string{"GET", "HEAD"}).Has(r.Method)) || host != publicDomain {
+			Lg.Trace("Need authorization")
+			if err := Try(func() {
 				auth := r.Header.Get("Authorization")
-				if !strStartsWith(auth, "Basic ") {
-					panicerr("No Authorization http header")
+				if !String(auth).StartsWith("Basic ") {
+					Panicerr("No Authorization http header")
 				}
-				auth = strSplit(auth)[1]
-				a := strSplit(base64Decode(auth), ":")
-				if a[0] != user || a[1] != pass {
-					panicerr("Wrong username or password")
+				auth = String(auth).Split()[1].S
+				a := String(Base64.Decode(auth)).Split(":")
+				if a[0].S != user || a[1].S != pass {
+					Panicerr("Wrong username or password")
 				}
 			}).Error; err != nil {
-				lg.trace("Error while checking credential:", err)
+				Lg.Trace("Error while checking credential:", err)
 				w.Header().Set("WWW-Authenticate", "Basic realm=\"\"")
 				w.WriteHeader(401)
 				w.Write([]byte("Unauthorised\n"))
 				return
 			} else {
-				lg.trace("Forward to backend server")
+				Lg.Trace("Forward to backend server")
 				proxy.ServeHTTP(w, r)
 			}
-		} else if r.RequestURI == "/v2" || r.RequestURI == "/v2/" { // anchore need this, can not return 403
+		} else if r.RequestURI == "/v2" || r.RequestURI == "/v2/" { // Anchore need to access this
 			w.WriteHeader(200)
 			w.Write([]byte("{}"))
 			return
 		} else {
-			lg.trace("Request URI:", r.RequestURI)
-			if len(reFindAll("/v2/[\\-a-z0-9A-Z]+?/(blobs|manifests)/sha256:[0-9a-z]{64}", r.RequestURI)) != 0 || len(reFindAll("/v2/[\\-a-z0-9A-Z]+?/manifests/[0-9-a-zA-Z\\.]+?$", r.RequestURI)) != 0 {
-				lg.trace("Forward to backend server")
+			Lg.Trace("Request URI:", r.RequestURI)
+			if len(Re.FindAll("/v2/[a-z0-9A-Z]+?/(blobs|manifests)/sha256:[0-9a-z]{64}", r.RequestURI)) != 0 || len(Re.FindAll("/v2/[a-z0-9A-Z]+?/manifests/[0-9-a-zA-Z]+?$", r.RequestURI)) != 0 {
+				Lg.Trace("Forward to backend server")
 				proxy.ServeHTTP(w, r)
 			} else {
-				lg.trace("Forbidden")
+				Lg.Trace("Forbidden")
 				w.WriteHeader(403)
 				return
 			}
@@ -72,28 +74,28 @@ func ProxyRequestHandler(proxy *httputil.ReverseProxy) func(http.ResponseWriter,
 
 func main() {
 	go func() {
-		lg.trace("Start registry server with config file: /etc/docker/registry/config.yml")
-		system("/entrypoint.sh /etc/docker/registry/config.yml")
+		Lg.Trace("Start registry server with config file: /etc/docker/registry/config.yml")
+		Os.System("/entrypoint.sh /etc/docker/registry/config.yml")
 	}()
 
-	if envexists("public_domain") {
-		publicDomain = getenv("public_domain")
+	if Os.Envexists("public_domain") {
+		publicDomain = Os.Getenv("public_domain")
 	}
-	if envexists("user") {
-		user = getenv("user")
+	if Os.Envexists("user") {
+		user = Os.Getenv("user")
 	}
-	if envexists("pass") {
-		pass = getenv("pass")
+	if Os.Envexists("pass") {
+		pass = Os.Getenv("pass")
 	}
-	lg.trace("public_domain:", publicDomain)
-	lg.trace("user: ", user)
-	lg.trace("pass:", pass)
+	Lg.Trace("public_domain:", publicDomain)
+	Lg.Trace("user: ", user)
+	Lg.Trace("pass:", pass)
 
 	proxy, err := NewProxy("http://127.0.0.1:5000")
-	panicerr(err)
+	Panicerr(err)
 
 	http.HandleFunc("/", ProxyRequestHandler(proxy))
 
-	lg.trace("Listen on：5001")
+	Lg.Trace("Listen on：5001")
 	log.Fatal(http.ListenAndServe(":5001", nil))
 }
